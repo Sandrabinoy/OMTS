@@ -8,18 +8,26 @@
 package com.cg.omts.moviebooking.controller;
 
 import com.cg.omts.moviebooking.dto.*;
+import com.cg.omts.moviebooking.exception.FetchingException;
+import com.cg.omts.moviebooking.exception.MovieNotFoundException;
+import com.cg.omts.moviebooking.exception.ShowNotFoundException;
+import com.cg.omts.moviebooking.exception.TheatreNotFoundException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
@@ -35,6 +43,7 @@ public class MovieBookingController {
 	private static final String MOVIE_URL = "http://movie-service/movie";
 	private static final String THEATRE_URL = "http://theatre-service/theatre";
 	private static final String SHOW_URL = "http://show-service/show";
+	private static final Logger LOGGER = LoggerFactory.getLogger(MovieBookingController.class);
 
 	/*
 	 * CONSUMPTION OF THEATRE MICROSERVICE
@@ -47,16 +56,36 @@ public class MovieBookingController {
 	 -Author            :   Sandra Binoy
 	 -Creation Date     :   11-06-2020
 	 -Description       :   Method to SELECT all rows and display the Theatre Table with the movies
+	 * @throws FetchingException 
 	 **********************************************************************************************************************************/
 	@GetMapping("/theatre")
-	public ResponseEntity<List<TheatreOMTS>> getTheatres(){
+	public ResponseEntity<List<TheatreOMTS>> getTheatres() throws FetchingException{
 
 		//Get all Theatres, get the list of movies, append it
-		MovieList movies = restTemplate.getForObject(MOVIE_URL, MovieList.class);
 
-		TheatreList theatres = restTemplate.getForObject(THEATRE_URL, TheatreList.class);
+		MovieList movies;
+		List<Theatre> theatreList;
+		
+		try {
+			movies = restTemplate.getForObject(MOVIE_URL, MovieList.class);
+			
+		} catch (Exception e) {
+			
+			LOGGER.debug(e.getMessage());
+			throw new FetchingException("Something went wrong! "+e);
+			
+		}
 
-		List<Theatre> theatreList = theatres.getTheatreList();
+		try {
+			
+			theatreList = restTemplate.getForObject(THEATRE_URL, TheatreList.class).getTheatreList();
+			
+		} catch (Exception e) {
+			
+			LOGGER.debug(e.getMessage());
+			throw new FetchingException("Something went wrong! "+e.getCause());
+			
+		}
 
 		List<TheatreOMTS> listOfTheatres = new ArrayList<>();
 
@@ -79,16 +108,37 @@ public class MovieBookingController {
 	 -Author            :   Sandra Binoy
 	 -Creation Date     :   11-06-2020
 	 -Description       :   Method for SELECT a row from Theatre Table by its name
+	 * @throws TheatreNotFoundException 
+	 * @throws FetchingException 
 	 **********************************************************************************************************************************/
 	@GetMapping("/theatre/{theatreName}")
-	public ResponseEntity<List<TheatreOMTS>> getTheatreByName(@PathVariable("theatreName") String theatreName){
+	public ResponseEntity<List<TheatreOMTS>> getTheatreByName(@PathVariable("theatreName") String theatreName) throws TheatreNotFoundException, FetchingException {
 
 		//Get Theatres by name, get the list of movies, append it
-		MovieList movies = restTemplate.getForObject(MOVIE_URL, MovieList.class);
+		MovieList movies;
+		List<Theatre> theatreList;
+		
+		try {			
 
-		TheatreList theatres = restTemplate.getForObject(THEATRE_URL+"/"+theatreName, TheatreList.class);
+			 movies = restTemplate.getForObject(MOVIE_URL, MovieList.class);
+			
+		} catch (Exception e) {
+			
+			LOGGER.debug(e.getMessage());
+			throw new TheatreNotFoundException("Incorrect theatre name");
+			
+		}
 
-		List<Theatre> theatreList = theatres.getTheatreList();
+		try{
+			
+			theatreList = restTemplate.getForObject(THEATRE_URL+"/"+theatreName, TheatreList.class).getTheatreList();
+			
+		}catch (Exception e) {
+			
+			LOGGER.debug(e.getMessage());
+			throw new FetchingException("Something went wrong! "+e.getCause());
+			
+		}
 
 		List<TheatreOMTS> listOfTheatres = new ArrayList<>();
 
@@ -111,13 +161,23 @@ public class MovieBookingController {
 	 -Author            :   Sandra Binoy
 	 -Creation Date     :   11-06-2020
 	 -Description       :   Method to UPDATE a value in the Theatre Table
+	 * @throws FetchingException 
 	 **********************************************************************************************************************************/
 	@PutMapping("/theatre/{theatreId}")
-	public ResponseEntity<Theatre> updateTheatre(@PathVariable("theatreId") Integer theatreId, @RequestBody Theatre theatre){
+	public ResponseEntity<Theatre> updateTheatre(@PathVariable("theatreId") Integer theatreId, @RequestBody Theatre theatre) throws TheatreNotFoundException, FetchingException{
 
 		HttpEntity<Theatre> entity = new HttpEntity<>(theatre);
+		
+		try {
 
 		return restTemplate.exchange(THEATRE_URL+"/"+theatreId, HttpMethod.PUT, entity, Theatre.class);
+		
+		}catch (Exception e) {
+			
+			LOGGER.debug(e.getMessage());
+			throw new FetchingException("Something went wrong! "+e.getCause());
+			
+		}
 
 	}
 
@@ -129,13 +189,23 @@ public class MovieBookingController {
 	 -Author            :   Sandra Binoy
 	 -Creation Date     :   11-06-2020
 	 -Description       :   Method to INSERT values into the Theatre Table
+	 * @throws FetchingException 
 	 **********************************************************************************************************************************/
 	@PostMapping("/theatre")
-	public ResponseEntity<Theatre> addTheatre(@RequestBody Theatre theatre){
+	public ResponseEntity<Theatre> addTheatre(@RequestBody Theatre theatre) throws FetchingException{
 
 		HttpEntity<Theatre> entity = new HttpEntity<>(theatre);
+		
+		try {
 
-		return restTemplate.exchange(THEATRE_URL, HttpMethod.POST, entity, Theatre.class);
+			return restTemplate.exchange(THEATRE_URL, HttpMethod.POST, entity, Theatre.class);
+			
+		} catch (Exception e) {
+			
+			LOGGER.debug(e.getMessage());
+			throw new FetchingException("Something went wrong! "+e.getCause());
+			
+		}
 
 	}
 
@@ -147,12 +217,22 @@ public class MovieBookingController {
 	 -Author            :   Sandra Binoy
 	 -Creation Date     :   11-06-2020
 	 -Description       :   Method to DELETE a value from Theatre Table
+	 * @throws FetchingException 
 	 **********************************************************************************************************************************/
 	@DeleteMapping("/theatre/{theatreId}")
-	public ResponseEntity<String> deleteTheatre(@PathVariable("theatreId") Integer theatreId) {
-
-
-		return restTemplate.exchange(THEATRE_URL+"/"+theatreId, HttpMethod.DELETE, null, String.class);
+	public ResponseEntity<String> deleteTheatre(@PathVariable("theatreId") Integer theatreId) throws FetchingException {
+		
+		try {
+			
+			return restTemplate.exchange(THEATRE_URL+"/"+theatreId, HttpMethod.DELETE, null, String.class);
+			
+			
+		} catch (Exception e) {
+			
+			LOGGER.debug(e.getMessage());
+			throw new FetchingException("Something went wrong! "+e.getMessage());
+			
+		}
 
 	}
 
@@ -186,10 +266,19 @@ public class MovieBookingController {
 	 -Description       :   Method to SELECT and display a movie by its name
 	 **********************************************************************************************************************************/
 	@GetMapping("/movie/{movieName}")
-	public ResponseEntity<Movie> getMovieByName(@PathVariable("movieName") String movieName)
+	public ResponseEntity<Movie> getMovieByName(@PathVariable("movieName") String movieName) throws MovieNotFoundException
 	{
 		
-		return restTemplate.exchange(MOVIE_URL+"/"+movieName, HttpMethod.GET, null, Movie.class);
+		try {
+			
+			return restTemplate.exchange(MOVIE_URL+"/"+movieName, HttpMethod.GET, null, Movie.class);
+			
+		} catch (Exception e) {
+			
+			LOGGER.debug(e.getMessage());
+			throw new MovieNotFoundException("Something went wrong! "+e.getCause());
+			
+		}
 		
 		
 	}
@@ -202,13 +291,23 @@ public class MovieBookingController {
 	 -Author            :   Sandra Binoy
 	 -Creation Date     :   11-06-2020
 	 -Description       :   Method to INSERT into the 
+	 * @throws FetchingException 
 	 **********************************************************************************************************************************/
 	@PostMapping("/movie")
-	public ResponseEntity<Movie> addMovie(@RequestBody Movie movie) {
+	public ResponseEntity<Movie> addMovie(@RequestBody Movie movie) throws FetchingException {
 		
 		HttpEntity<Movie> entity = new HttpEntity<>(movie);
 		
-		return restTemplate.exchange(MOVIE_URL, HttpMethod.POST, entity, Movie.class);
+		try {
+			
+			return restTemplate.exchange(MOVIE_URL, HttpMethod.POST, entity, Movie.class);
+			
+		} catch (Exception e) {
+			
+			LOGGER.debug(e.getMessage());
+			throw new FetchingException("Something went wrong! "+e.getCause());
+			
+		}
 		
 	}
 	
@@ -220,13 +319,23 @@ public class MovieBookingController {
 	 -Author            :   Sandra Binoy
 	 -Creation Date     :   11-06-2020
 	 -Description       :   Method to UPDATE values of a movie using its ID
+	 * @throws FetchingException 
 	 **********************************************************************************************************************************/
 	@PutMapping("/movie/{movieId}")
-	public ResponseEntity<Movie> updateMovie(@PathVariable("movieId") Integer movieId, @RequestBody Movie movie) {
+	public ResponseEntity<Movie> updateMovie(@PathVariable("movieId") Integer movieId, @RequestBody Movie movie) throws FetchingException {
 		
 		HttpEntity<Movie> entity = new HttpEntity<>(movie);
 		
-		return restTemplate.exchange(MOVIE_URL+"/"+movieId, HttpMethod.PUT, entity, Movie.class);
+		try {
+			
+			return restTemplate.exchange(MOVIE_URL+"/"+movieId, HttpMethod.PUT, entity, Movie.class);
+			
+		} catch (Exception e) {
+			
+			LOGGER.debug(e.getMessage());
+			throw new FetchingException("Something went wrong! "+e.getCause());
+			
+		}
 		
 	}
 	
@@ -238,11 +347,21 @@ public class MovieBookingController {
 	 -Author            :   Sandra Binoy
 	 -Creation Date     :   11-06-2020
 	 -Description       :   Method to DELETE value from the Movie Table by its ID
+	 * @throws FetchingException 
 	 **********************************************************************************************************************************/
 	@DeleteMapping("/movie/{movieId}")
-	public ResponseEntity<String> deleteMovie(@PathVariable("movieId") Integer movieId){
-
-		return restTemplate.exchange(MOVIE_URL+"/"+movieId, HttpMethod.DELETE, null, String.class);
+	public ResponseEntity<String> deleteMovie(@PathVariable("movieId") Integer movieId) throws FetchingException{
+		
+		try {
+			
+			return restTemplate.exchange(MOVIE_URL+"/"+movieId, HttpMethod.DELETE, null, String.class);
+			
+		} catch (Exception e) {
+			
+			LOGGER.debug(e.getMessage());
+			throw new FetchingException("Something went wrong!"+e.getCause());
+			
+		}
 		
 	}
 	
@@ -258,27 +377,37 @@ public class MovieBookingController {
 	 -Author            :   Sandra Binoy
 	 -Creation Date     :   11-06-2020
 	 -Description       :   Method for SELECT all values from Show Table
+	 * @throws FetchingException 
 	 **********************************************************************************************************************************/
 	@GetMapping("/show")
-	public ResponseEntity<List<ShowOMTS>> getAllShows(){
+	public ResponseEntity<List<ShowOMTS>> getAllShows() throws FetchingException{
 		
 		//Get all shows, map each movie name from show to fetch the movie object from Movie
-		
-		ResponseEntity<ShowList> response = restTemplate.exchange(SHOW_URL, HttpMethod.GET, null, ShowList.class);
+		ResponseEntity<ShowList> response;
+		try {
+			
+			response = restTemplate.exchange(SHOW_URL, HttpMethod.GET, null, ShowList.class);
+			
+		} catch (Exception e) {
+			
+			LOGGER.debug(e.getMessage());
+			throw new FetchingException("Something went wrong!"+e.getCause());
+			
+		}
 		
 		List<Show> shows = response.getBody().getShowList();
 		
-		List<ShowOMTS> showOmtsList = new ArrayList<>();
+		List<ShowOMTS> showList = new ArrayList<>();
 		
 		for(Show show:shows) {
 			
 			Movie movie = restTemplate.getForObject(MOVIE_URL+"/"+show.getMovieName(), Movie.class);
 			ShowOMTS showOMTS = new ShowOMTS(show.getShowId(), show.getTheatreId(), show.getShowName(), show.getStartTime(), show.getEndTime(), movie);
-			showOmtsList.add(showOMTS);
+			showList.add(showOMTS);
 			
 		}
 		
-		return new ResponseEntity<>(showOmtsList, HttpStatus.OK);
+		return new ResponseEntity<>(showList, HttpStatus.OK);
 
 	}
 	
@@ -358,13 +487,28 @@ public class MovieBookingController {
 		 -Author            :   Sandra Binoy
 		 -Creation Date     :   11-06-2020
 		 -Description       :   Method for DELETE a row from Show Table
+		 * @throws ShowNotFoundException 
 		 **********************************************************************************************************************************/
 		@DeleteMapping("/show/{showId}")
-		public ResponseEntity<String> deleteShow(@PathVariable("showId") Integer showId) {
+		public ResponseEntity<String> deleteShow(@PathVariable("showId") Integer showId) throws ShowNotFoundException {
 			
-			return restTemplate.exchange(SHOW_URL+"/"+showId, HttpMethod.DELETE, null, String.class);
+			try {
+
+				return restTemplate.exchange(SHOW_URL+"/"+showId, HttpMethod.DELETE, null, String.class);
+				
+			} catch (Exception e) {
+				
+				LOGGER.debug(e.getMessage());
+				throw new ShowNotFoundException("Something went wrong! "+e.getCause());
+				
+			}
 			
 		}
-
+		
+		@ExceptionHandler(Exception.class)
+		@ResponseStatus(HttpStatus.BAD_REQUEST)
+		ResponseEntity<String> handleConstraintViolation(Exception e) {
+			return new ResponseEntity<>("" + e.getMessage(), HttpStatus.BAD_REQUEST);
+		}
 
 }

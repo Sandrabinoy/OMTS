@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component;
 public class Show {
 	
 	private Integer showId;
-//	@NotNull(message = "Show name cannot be null")
 	@NotEmpty(message = "Show name cannot be empty")
 	@NotBlank(message = "Show name cannot be left blank")
 	private String showName;

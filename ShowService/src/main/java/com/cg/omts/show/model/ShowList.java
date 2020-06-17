@@ -4,19 +4,19 @@ import java.util.List;
 
 public class ShowList {
 	
-	private List<Show> showList;
+	private List<Show> listOfShow;
 
 	public List<Show> getShowList() {
-		return showList;
+		return listOfShow;
 	}
 
 	public void setShowList(List<Show> showList) {
-		this.showList = showList;
+		this.listOfShow = showList;
 	}
 
 	@Override
 	public String toString() {
-		return "ShowList [showList=" + showList + "]";
+		return "ShowList [showList=" + listOfShow + "]";
 	}
 
 }
