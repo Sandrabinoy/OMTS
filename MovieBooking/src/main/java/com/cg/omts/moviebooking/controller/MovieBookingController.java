@@ -31,6 +31,10 @@ public class MovieBookingController {
 
 	@Autowired
 	private RestTemplate restTemplate;
+	
+	private static final String MOVIE_URL = "http://movie-service/movie";
+	private static final String THEATRE_URL = "http://theatre-service/theatre";
+	private static final String SHOW_URL = "http://show-service/show";
 
 	/*
 	 * CONSUMPTION OF THEATRE MICROSERVICE
@@ -48,9 +52,9 @@ public class MovieBookingController {
 	public ResponseEntity<List<TheatreOMTS>> getTheatres(){
 
 		//Get all Theatres, get the list of movies, append it
-		MovieList movies = restTemplate.getForObject("http://movie-service/movie", MovieList.class);
+		MovieList movies = restTemplate.getForObject(MOVIE_URL, MovieList.class);
 
-		TheatreList theatres = restTemplate.getForObject("http://theatre-service/theatre", TheatreList.class);
+		TheatreList theatres = restTemplate.getForObject(THEATRE_URL, TheatreList.class);
 
 		List<Theatre> theatreList = theatres.getTheatreList();
 
@@ -80,9 +84,9 @@ public class MovieBookingController {
 	public ResponseEntity<List<TheatreOMTS>> getTheatreByName(@PathVariable("theatreName") String theatreName){
 
 		//Get Theatres by name, get the list of movies, append it
-		MovieList movies = restTemplate.getForObject("http://movie-service/movie", MovieList.class);
+		MovieList movies = restTemplate.getForObject(MOVIE_URL, MovieList.class);
 
-		TheatreList theatres = restTemplate.getForObject("http://theatre-service/theatre/"+theatreName, TheatreList.class);
+		TheatreList theatres = restTemplate.getForObject(THEATRE_URL+"/"+theatreName, TheatreList.class);
 
 		List<Theatre> theatreList = theatres.getTheatreList();
 
@@ -113,7 +117,7 @@ public class MovieBookingController {
 
 		HttpEntity<Theatre> entity = new HttpEntity<>(theatre);
 
-		return restTemplate.exchange("http://theatre-service/theatre/"+theatreId, HttpMethod.PUT, entity, Theatre.class);
+		return restTemplate.exchange(THEATRE_URL+"/"+theatreId, HttpMethod.PUT, entity, Theatre.class);
 
 	}
 
@@ -131,7 +135,7 @@ public class MovieBookingController {
 
 		HttpEntity<Theatre> entity = new HttpEntity<>(theatre);
 
-		return restTemplate.exchange("http://theatre-service/theatre", HttpMethod.POST, entity, Theatre.class);
+		return restTemplate.exchange(THEATRE_URL, HttpMethod.POST, entity, Theatre.class);
 
 	}
 
@@ -148,7 +152,7 @@ public class MovieBookingController {
 	public ResponseEntity<String> deleteTheatre(@PathVariable("theatreId") Integer theatreId) {
 
 
-		return restTemplate.exchange("http://theatre-service/theatre/"+theatreId, HttpMethod.DELETE, null, String.class);
+		return restTemplate.exchange(THEATRE_URL+"/"+theatreId, HttpMethod.DELETE, null, String.class);
 
 	}
 
@@ -168,7 +172,7 @@ public class MovieBookingController {
 	@GetMapping("/movie")
 	public ResponseEntity<MovieList> getAllMovies(){
 		
-		return restTemplate.exchange("http://movie-service/movie", HttpMethod.GET, null, MovieList.class);
+		return restTemplate.exchange(MOVIE_URL, HttpMethod.GET, null, MovieList.class);
 		
 	}
 	
@@ -185,7 +189,7 @@ public class MovieBookingController {
 	public ResponseEntity<Movie> getMovieByName(@PathVariable("movieName") String movieName)
 	{
 		
-		return restTemplate.exchange("http://movie-service/movie/"+movieName, HttpMethod.GET, null, Movie.class);
+		return restTemplate.exchange(MOVIE_URL+"/"+movieName, HttpMethod.GET, null, Movie.class);
 		
 		
 	}
@@ -204,7 +208,7 @@ public class MovieBookingController {
 		
 		HttpEntity<Movie> entity = new HttpEntity<>(movie);
 		
-		return restTemplate.exchange("http://movie-service/movie", HttpMethod.POST, entity, Movie.class);
+		return restTemplate.exchange(MOVIE_URL, HttpMethod.POST, entity, Movie.class);
 		
 	}
 	
@@ -222,7 +226,7 @@ public class MovieBookingController {
 		
 		HttpEntity<Movie> entity = new HttpEntity<>(movie);
 		
-		return restTemplate.exchange("http://movie-service/movie/"+movieId, HttpMethod.PUT, entity, Movie.class);
+		return restTemplate.exchange(MOVIE_URL+"/"+movieId, HttpMethod.PUT, entity, Movie.class);
 		
 	}
 	
@@ -238,7 +242,7 @@ public class MovieBookingController {
 	@DeleteMapping("/movie/{movieId}")
 	public ResponseEntity<String> deleteMovie(@PathVariable("movieId") Integer movieId){
 
-		return restTemplate.exchange("http://movie-service/movie/"+movieId, HttpMethod.DELETE, null, String.class);
+		return restTemplate.exchange(MOVIE_URL+"/"+movieId, HttpMethod.DELETE, null, String.class);
 		
 	}
 	
@@ -260,7 +264,7 @@ public class MovieBookingController {
 		
 		//Get all shows, map each movie name from show to fetch the movie object from Movie
 		
-		ResponseEntity<ShowList> response = restTemplate.exchange("http://show-service/show", HttpMethod.GET, null, ShowList.class);
+		ResponseEntity<ShowList> response = restTemplate.exchange(SHOW_URL, HttpMethod.GET, null, ShowList.class);
 		
 		List<Show> shows = response.getBody().getShowList();
 		
@@ -268,7 +272,7 @@ public class MovieBookingController {
 		
 		for(Show show:shows) {
 			
-			Movie movie = restTemplate.getForObject("http://movie-service/movie/"+show.getMovieName(), Movie.class);
+			Movie movie = restTemplate.getForObject(MOVIE_URL+"/"+show.getMovieName(), Movie.class);
 			ShowOMTS showOMTS = new ShowOMTS(show.getShowId(), show.getTheatreId(), show.getShowName(), show.getStartTime(), show.getEndTime(), movie);
 			showOmtsList.add(showOMTS);
 			
@@ -291,7 +295,7 @@ public class MovieBookingController {
 		public ResponseEntity<List<ShowOMTS>> getShowByName(@PathVariable("showName") String showName)
 		{
 			
-			ResponseEntity<ShowList> response = restTemplate.exchange("http://show-service/show/"+showName, HttpMethod.GET, null, ShowList.class);
+			ResponseEntity<ShowList> response = restTemplate.exchange(SHOW_URL+"/"+showName, HttpMethod.GET, null, ShowList.class);
 			
 			List<Show> shows = response.getBody().getShowList();
 			
@@ -299,7 +303,7 @@ public class MovieBookingController {
 			
 			for(Show show:shows) {
 			
-			Movie movie = restTemplate.getForObject("http://movie-service/movie/"+show.getMovieName(), Movie.class);
+			Movie movie = restTemplate.getForObject(MOVIE_URL+"/"+show.getMovieName(), Movie.class);
 			
 			ShowOMTS showOMTS = new ShowOMTS(show.getShowId(), show.getTheatreId(), show.getShowName(), show.getStartTime(), show.getEndTime(), movie);
 			showList.add(showOMTS);
@@ -324,7 +328,7 @@ public class MovieBookingController {
 			
 			HttpEntity<Show> entity = new HttpEntity<>(show);
 			
-			return restTemplate.exchange("http://show-service/show", HttpMethod.POST, entity, Show.class);
+			return restTemplate.exchange(SHOW_URL, HttpMethod.POST, entity, Show.class);
 			
 		}
 		
@@ -342,7 +346,7 @@ public class MovieBookingController {
 			
 			HttpEntity<Show> entity = new HttpEntity<>(show);
 			
-			return restTemplate.exchange("http://show-service/show/"+showId, HttpMethod.PUT, entity, Show.class);
+			return restTemplate.exchange(SHOW_URL+"/"+showId, HttpMethod.PUT, entity, Show.class);
 			
 		}
 		
@@ -358,7 +362,7 @@ public class MovieBookingController {
 		@DeleteMapping("/show/{showId}")
 		public ResponseEntity<String> deleteShow(@PathVariable("showId") Integer showId) {
 			
-			return restTemplate.exchange("http://show-service/show/"+showId, HttpMethod.DELETE, null, String.class);
+			return restTemplate.exchange(SHOW_URL+"/"+showId, HttpMethod.DELETE, null, String.class);
 			
 		}
 
